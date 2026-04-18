@@ -70,7 +70,9 @@ oparciu o <http://www.ietf.org/rfc/rfc4559.txt>.
 
 %prep
 %setup -q -n pykerberos-%{version}
+%if %{without krb5}
 %patch -P0 -p1
+%endif
 
 %build
 %if %{with python2}
