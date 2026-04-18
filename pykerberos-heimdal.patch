@@ -1,0 +1,77 @@
+--- pykerberos-1.2.4/src/kerberosbasic.h.orig	2026-04-18 10:13:09.127262480 +0200
++++ pykerberos-1.2.4/src/kerberosbasic.h	2026-04-18 10:13:21.060531165 +0200
+@@ -15,7 +15,7 @@
+  **/
+ 
+ #include <gssapi/gssapi.h>
+-#include <gssapi/gssapi_generic.h>
++#include <krb5.h>
+ #include <gssapi/gssapi_krb5.h>
+ 
+ #define krb5_get_err_text(context,code) error_message(code)
+--- pykerberos-1.2.4/src/kerberospw.h.orig	2026-04-18 10:14:07.900277413 +0200
++++ pykerberos-1.2.4/src/kerberospw.h	2026-04-18 10:14:12.170254280 +0200
+@@ -16,7 +16,7 @@
+  **/
+ 
+ #include <gssapi/gssapi.h>
+-#include <gssapi/gssapi_generic.h>
++#include <krb5.h>
+ #include <gssapi/gssapi_krb5.h>
+ 
+ #define krb5_get_err_text(context,code) error_message(code)
+--- pykerberos-1.2.4/src/kerberosgss.h.orig	2026-04-18 10:14:39.380106872 +0200
++++ pykerberos-1.2.4/src/kerberosgss.h	2026-04-18 10:14:46.006737639 +0200
+@@ -15,7 +15,7 @@
+  **/
+ 
+ #include <gssapi/gssapi.h>
+-#include <gssapi/gssapi_generic.h>
++#include <krb5.h>
+ #include <gssapi/gssapi_krb5.h>
+ #ifdef GSSAPI_EXT
+   #include <gssapi/gssapi_ext.h>
+--- pykerberos-1.2.4/src/kerberosgss.c.orig	2026-04-18 10:34:52.273536064 +0200
++++ pykerberos-1.2.4/src/kerberosgss.c	2026-04-18 10:45:10.373520862 +0200
+@@ -38,7 +38,7 @@ char* server_principal_details(const cha
+     int code;
+     krb5_context kcontext;
+     krb5_keytab kt = NULL;
+-    krb5_kt_cursor cursor = NULL;
++    krb5_kt_cursor cursor = {-1, NULL, NULL};
+     krb5_keytab_entry entry;
+     char* pname = NULL;
+ 
+@@ -82,12 +82,12 @@ char* server_principal_details(const cha
+             result = malloc(strlen(pname) + 1);
+             strcpy(result, pname);
+             krb5_free_unparsed_name(kcontext, pname);
+-            krb5_free_keytab_entry_contents(kcontext, &entry);
++            krb5_kt_free_entry(kcontext, &entry);
+             break;
+         }
+ 
+         krb5_free_unparsed_name(kcontext, pname);
+-        krb5_free_keytab_entry_contents(kcontext, &entry);
++        krb5_kt_free_entry(kcontext, &entry);
+     }
+ 
+     if (result == NULL)
+@@ -97,7 +97,7 @@ char* server_principal_details(const cha
+     }
+ 
+ end:
+-    if (cursor)
++    if (cursor.sp != NULL || cursor.data != NULL)
+         krb5_kt_end_seq_get(kcontext, kt, &cursor);
+     if (kt)
+         krb5_kt_close(kcontext, kt);
+@@ -131,7 +131,7 @@ int authenticate_gss_client_init(const c
+     if (strchr(service, '/'))
+         mech = GSS_C_NO_OID;
+     else
+-        mech = gss_krb5_nt_service_name;
++        mech = GSS_C_NT_HOSTBASED_SERVICE;
+ 
+     maj_stat = gss_import_name(&min_stat, &name_token, mech, &state->server_name);
+ 
